@@ -1,0 +1,9 @@
+[Plugin]
+Loader=python3
+Module=textflow
+IAge=3
+Name=Task Parser
+Description=Highlights tasks and completion status in your planning notes
+Authors=Dao's Lies
+Copyright=Copyright © 2026
+Website=www.saltthoughts.co.uk
