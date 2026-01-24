@@ -1,6 +1,6 @@
 [Plugin]
 Loader=python3
-Module=textflow
+Module=textflow.textflow
 IAge=3
 Name=Task Parser
 Description=Highlights tasks and completion status in your planning notes
