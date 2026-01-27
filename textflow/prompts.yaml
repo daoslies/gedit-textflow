@@ -1,6 +1,6 @@
 extract_names:
   |-
-    Extract all person names from the following text. For each name, assign a color that matches their feeling (happy→yellow, sad→blue, angry→red, calm→green). Return ONLY a LIST of (name, colour) tuples. No other text.
+    Extract all person names from the following text. For each name, assign a color that matches their feeling (e.g. happy→yellow, sad→blue, angry→red, calm→green). Return ONLY a LIST of (name, colour) tuples. No other text.
 
     Example:
     Text:

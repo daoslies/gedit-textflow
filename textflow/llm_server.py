@@ -39,6 +39,7 @@ class LLMServer:
         self.current_model = None
         self.model_lock = Lock()
         self.register_routes()
+        self.this_dir = os.path.dirname(os.path.abspath(__file__))
 
     def load_model(self, model_path: str):
         """Load a GGUF model using llama.cpp"""
@@ -60,7 +61,7 @@ class LLMServer:
         with open(yaml_path, 'r') as f:
             return yaml.safe_load(f)
 
-    def extract_names(self, text: str, llm: Llama, prompts_path: str = 'prompts.yaml'):
+    def extract_names(self, text: str, llm: Llama, prompts_path: str):
         """Extract person names from text using LLM"""
         prompts = self.load_prompts(prompts_path)
         prompt = prompts['extract_names'].format(text=text)
@@ -142,7 +143,7 @@ class LLMServer:
                     'message': f'Model loaded from {model_path} ',
                 })
             except Exception as e:
-                return jsonify({'error': str(e)}), 500
+                return jsonify({'error': str(e) + f"{model_path} \n \n Current dir: {os.getcwd()}"}), 500
 
         @app.route('/unload_model', methods=['POST'])
         def unload_model_endpoint():
@@ -167,7 +168,7 @@ class LLMServer:
             if not data or 'text' not in data:
                 return jsonify({'error': 'text is required'}), 400
             text = data['text']
-            prompts_path = data.get('prompts_path', 'prompts.yaml')
+            prompts_path = data.get('prompts_path', self.this_dir + '/prompts.yaml')
             print('here')
             print(prompts_path)
             if not os.path.exists(prompts_path):

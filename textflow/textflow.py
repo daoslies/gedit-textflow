@@ -9,6 +9,27 @@ import os
 import time
 
 
+import configparser
+from pathlib import Path
+
+CONFIG_DIR = Path.home() / ".config" / "myplugin"
+CONFIG_FILE = CONFIG_DIR / "config.ini"
+
+config = configparser.ConfigParser()
+
+models_dir = None
+
+if CONFIG_FILE.exists():
+    config.read(CONFIG_FILE)
+    models_dir = config.get("models", "path", fallback=None)
+
+if models_dir:
+    models_dir = Path(models_dir).expanduser()
+else:
+    # fallback to default
+    models_dir = Path(__file__).resolve().parent / "models" 
+
+
 
 
 
@@ -23,6 +44,11 @@ class TextFlowPlugin(GObject.Object, Gedit.WindowActivatable):
         self._tags_created = set()
         self._llm = None
         self.llm_names = []
+        self.this_dir = os.path.dirname(__file__)
+        self.models_dir = models_dir
+
+        print('This dir')
+        print(self.this_dir)
 
 
         self.time_check = time.time()
@@ -45,6 +71,8 @@ class TextFlowPlugin(GObject.Object, Gedit.WindowActivatable):
 
     def do_deactivate(self):
         print("TextFlow deactivated!")
+
+        print(os.getcwd())
         
         # Stop LLM server on deactivation
         self.stop_llm_server()
@@ -158,7 +186,7 @@ class TextFlowPlugin(GObject.Object, Gedit.WindowActivatable):
             'red': '#ffb3ba',
             'yellow': '#fff6b3',
             'green': '#baffc9',
-            'blue': '#bae1ff',
+            'blue': "#8ac4f0",
             'purple': '#e0bbff',
             'orange': '#ffd6a5',
             'pink': '#ffb7ce',
@@ -373,7 +401,8 @@ class TextFlowPlugin(GObject.Object, Gedit.WindowActivatable):
 
     def stop_llm_server(self):
         """Stop the LLM server using the PID file"""
-        pid_file = os.path.join(os.path.dirname(__file__), 'llm_server.pid')
+        pid_file = self.this_dir + '/logs/llm_server.pid'
+        
         if os.path.exists(pid_file):
             with open(pid_file, 'r') as f:
                 pid = f.read().strip()
@@ -393,7 +422,7 @@ class TextFlowPlugin(GObject.Object, Gedit.WindowActivatable):
         import json as _json
 
         server_url = 'http://localhost:19953'
-        model_path = 'models/pydevmini_full.gguf'  # Update if needed
+        model_path = os.path.join(self.models_dir, 'pydevmini_full.gguf')  # Update if needed
 
         headers = {'Content-Type': 'application/json'}
         # Retry loop to ensure server is ready
@@ -405,6 +434,8 @@ class TextFlowPlugin(GObject.Object, Gedit.WindowActivatable):
                     headers=headers,
                     timeout=10
                 )
+
+                print(resp.json())
                 if resp.status_code == 200:
                     print(f"\n LLM model loaded from {model_path} - response: {resp.json()} \n")
                     break
