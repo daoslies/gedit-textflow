@@ -96,7 +96,7 @@ class TextFlowPlugin(GObject.Object, Gedit.WindowActivatable):
         text = doc.get_text(start, end, False)
         
         if text.strip():  # Only if there's content
-            names = self.extract_names_from_text(text)
+            names = self.extract_names_async(text)
             print(f"Extracted names: {names}")
             # TODO: Store names and assign colors
         
@@ -378,6 +378,47 @@ class TextFlowPlugin(GObject.Object, Gedit.WindowActivatable):
     def run_inference_async(self, prompt, max_tokens=150, temperature=0.3, stop=None):
         thread = threading.Thread(target=self.do_inference_work, args=(prompt, max_tokens, temperature, stop), daemon=True)
         thread.start()
+
+    def do_extract_names_work(self, text, prompts_path=None):
+        """Background thread: call LLM server to extract names."""
+        if not hasattr(self, 'llm_server_url'):
+            print("LLM server URL not set. Did you call load_llm_model?")
+            result = []
+        else:
+            try:
+                payload = {"text": text}
+                if prompts_path:
+                    payload["prompts_path"] = prompts_path
+                resp = requests.post(
+                    f"{self.llm_server_url}/extract_names",
+                    json=payload,
+                    timeout=30
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    result = data.get('names', [])
+                else:
+                    print(f"LLM server error: {resp.text}")
+                    result = []
+            except Exception as e:
+                print(f"Failed to contact LLM server: {e}")
+                result = []
+        GLib.idle_add(self.on_extract_names_finished, result)
+
+    def on_extract_names_finished(self, names):
+        """Safe to touch GTK here. Update UI or state with extracted names."""
+        print("Extracted names (async):", names)
+        self.llm_names = names
+        # Optionally, update tags in the current document here
+        # Example: self.add_dynamic_tags(current_doc)
+        return False  # Remove idle handler
+
+    def extract_names_async(self, text, prompts_path=None):
+        """Start async extraction of names from text."""
+        thread = threading.Thread(target=self.do_extract_names_work, args=(text, prompts_path), daemon=True)
+        thread.start()
+
+
 
 
 #### LLM stuff
